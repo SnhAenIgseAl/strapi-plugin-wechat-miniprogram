@@ -1,9 +1,4 @@
 import type { Core } from '@strapi/strapi';
-import { useFetch } from '../utils/useFetch';
-
-declare const window: {
-	location: any;
-} & Window;
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 	getWelcomeMessage() {
