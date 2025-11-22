@@ -75,15 +75,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 				status: 'published'
 			})
 
-			console.log(user.id);
-
 			return {
 				jwt: getService('jwt').issue({ id: newUser.id }),
 				user: await sanitizeUser(newUser, ctx)
 			}
 		}
-
-		console.log(user.user);
 
 		return {
 			jwt: getService('jwt').issue({ id: user.user.id }),
