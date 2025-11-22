@@ -30,12 +30,6 @@ export default {
             "configurable": true,
             "required": true,
             "default": null
-        },
-        "default_role": {
-            "type": "string",
-            "configurable": true,
-            "required": false,
-            "default": null
         }
     }
 }
