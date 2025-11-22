@@ -22,8 +22,7 @@ export default {
         "user": {
             "type": "relation",
             "relation": "oneToOne",
-            "target": "plugin::users-permissions.user",
-            "inversedBy": "wechat-user"
+            "target": "plugin::users-permissions.user"
         },
         "openid": {
             "type": "string",
