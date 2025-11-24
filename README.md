@@ -5,17 +5,18 @@
 ## 安装
 `npm i strapi-plugin-wechat-miniprogram`
 
-## openid 微信登录
+## 微信登录
 - 方法：`POST`
 - 路径：`STRAPI_URL/api/strapi-plugin-wechat-miniprogram/login`
 - body 参数：
   
 | 参数名  | 类型  | 是否必须  |
 | ------------ | ------------ | :----------: |
-| code  | string  | √ |
+| openidCode  | string  | √ |
+| phoneCode  | string  |  |
 - 权限： `public`  
   
-请求成功后返回 jwt 和 user 信息，等同于 strapi 用户。
+仅带有 `openidCode` 参数时会以 `openid` 为主键创建用户
 ``` json
 {
     "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzYzNzkxNjMyLCJleHAiOjE3NjYzODM2MzJ9.xoZjtImtn1klQoLL5Xrrcvcy5KnPFDMaHvcAHGUtx0c",
@@ -23,13 +24,31 @@
         "id": 7,
         "documentId": "bavikfbi4okjwoc5qq720x56",
         "username": "obDKA13HPuz9C5BWppYpRm1uJ9Cs",
-        "email": "obDKA13HPuz9C5BWppYpRm1uJ9Cs@qq.com",
+        "email": "obDKA13HPuz9C5BWppYpRm1uJ9Cs@example.com",
         "provider": null,
         "confirmed": true,
         "blocked": false,
         "createdAt": "2025-11-20T09:57:03.063Z",
         "updatedAt": "2025-11-20T09:57:03.063Z",
         "publishedAt": "2025-11-20T09:57:02.997Z"
+    }
+}
+```
+同时带有 `openidCode` 和 `phoneCode` 参数以手机号为主键创建用户
+``` json
+{
+    "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImlhdCI6MTc2Mzk3MTIwNCwiZXhwIjoxNzY2NTYzMjA0fQ.rZ0_9gBILUl25TNAQSXnPmJ2Je2ZrhV45D2kdX66IZY",
+    "user": {
+        "id": 11,
+        "documentId": "jrzss6zc1gas8toy9ddhzy27",
+        "username": "XXXXXXXXXXX",
+        "email": "XXXXXXXXXXX@example.com",
+        "provider": null,
+        "confirmed": true,
+        "blocked": false,
+        "createdAt": "2025-11-24T08:00:04.572Z",
+        "updatedAt": "2025-11-24T08:00:04.572Z",
+        "publishedAt": "2025-11-24T08:00:04.502Z"
     }
 }
 ```
