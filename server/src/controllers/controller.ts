@@ -4,6 +4,10 @@ const getService = (name: string) => {
 	return strapi.plugin('users-permissions').service(name);
 }
 
+const getPluginService = (name: string) => {
+	return strapi.plugin('strapi-plugin-wechat-miniprogram').service(name);
+}
+
 const sanitizeUser = (user, ctx) => {
 	const { auth } = ctx.state;
 	const userSchema = strapi.getModel('plugin::users-permissions.user');
@@ -20,27 +24,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 			.getWelcomeMessage();
 	},
 
-	async login(ctx) {
-		const { code } = ctx.request.body
-
-		const appInfo = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-configs').findMany()
-		const id = appInfo[0].app_id
-		const secret = appInfo[0].app_secret
-
-		const data = await new Promise<any>((resolve, reject) => {
-			fetch(`https://api.weixin.qq.com/sns/jscode2session?appid=${id}&secret=${secret}&js_code=${code}&grant_type=authorization_code`)
-				.then(res => res.json())
-				.then(res => {
-					resolve(res as any)
-				})
-		})
-
-		if (!data.openid) {
-			ctx.throw(400, 'code 无效');
-		}
-
-		const { openid } = data
-
+	async createUserByOpenid(openid: string, ctx) {
 		const user = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-users').findFirst({
 			filters: {
 				openid: openid
@@ -55,11 +39,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 				}
 			})
 
-			const password = strapi.plugin('strapi-plugin-wechat-miniprogram').service('service').getRandomPassword(16)
+			const password = getPluginService('service').getRandomPassword(16)
 			const newUser = await strapi.documents('plugin::users-permissions.user').create({
 				data: {
 					username: openid,
-					email: openid + '@qq.com',
+					email: openid + '@example.com',
 					password: password,
 					confirmed: true,
 					role: role.documentId
@@ -87,10 +71,101 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 		}
 	},
 
+	async createUserByPhone(phoneNumber: string, openid: string, ctx) {
+		const user = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-users').findFirst({
+			filters: {
+				phone: phoneNumber
+			},
+			populate: 'user'
+		})
+
+		if (!user) {
+			const role = await strapi.documents('plugin::users-permissions.role').findFirst({
+				filters: {
+					name: 'Authenticated'
+				}
+			})
+
+			const password = getPluginService('service').getRandomPassword(16)
+			const newUser = await strapi.documents('plugin::users-permissions.user').create({
+				data: {
+					username: phoneNumber,
+					email: phoneNumber + '@example.com',
+					password: password,
+					confirmed: true,
+					role: role.documentId
+				},
+				status: 'published'
+			})
+
+			await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-users').create({
+				data: {
+					openid: openid,
+					phone: phoneNumber,
+					user: newUser.documentId
+				},
+				status: 'published'
+			})
+
+			return {
+				jwt: getService('jwt').issue({ id: newUser.id }),
+				user: await sanitizeUser(newUser, ctx)
+			}
+		}
+
+		return {
+			jwt: getService('jwt').issue({ id: user.user.id }),
+			user: await sanitizeUser(user.user, ctx)
+		}
+	},
+
+	async login(ctx) {
+		const { openidCode, phoneCode } = ctx.request.body
+		if (!openidCode) {
+			ctx.throw(400, '缺少 openidCode 参数');
+		}
+
+		const appInfo = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-configs').findMany()
+		if (appInfo.length === 0) {
+			ctx.throw(400, '请先配置微信小程序信息');
+		}
+		
+		const id = appInfo[0].app_id
+		const secret = appInfo[0].app_secret
+
+		const openidData = await getPluginService('service').getOpenidData(id, secret, openidCode)
+		if (!openidData.openid) {
+			ctx.throw(400, openidData.errmsg);
+		}
+
+		const { openid } = openidData
+		let phoneNumber = ''
+		
+		if (phoneCode) {
+			const phoneData = await getPluginService('service').getPhoneData(id, secret, phoneCode)
+			if (phoneData.errcode !== 0) {
+				ctx.throw(400, phoneData.errmsg);
+			}
+
+			phoneNumber = phoneData.phone_info.purePhoneNumber
+
+			const res = await this.createUserByPhone(phoneNumber, openid, ctx)
+			return res
+		} else {
+			const res = await this.createUserByOpenid(openid, ctx)
+			return res
+		}
+	},
+
 	async getPhoneNumber(ctx) {
 		const { code } = ctx.request.body
 
 		const appInfo = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-configs').findMany()
+		
+		if (appInfo.length === 0) {
+			ctx.throw(400, '请先配置微信小程序信息');
+		}
+		
 		const appId = appInfo[0].app_id
 		const appSecret = appInfo[0].app_secret
 
@@ -157,6 +232,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 		const { code } = ctx.request.body
 
 		const appInfo = await strapi.documents('plugin::strapi-plugin-wechat-miniprogram.wechat-configs').findMany()
+		
+		if (appInfo.length === 0) {
+			ctx.throw(400, '请先配置微信小程序信息');
+		}
+		
 		const id = appInfo[0].app_id
 		const secret = appInfo[0].app_secret
 
