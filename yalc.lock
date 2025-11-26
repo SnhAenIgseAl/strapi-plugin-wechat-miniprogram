@@ -2,7 +2,7 @@
   "version": "v1",
   "packages": {
     "strapi-plugin-wechat-miniprogram": {
-      "signature": "2adad8ccc19efd4d2937aea3e5ed704e",
+      "signature": "660bdc24e472db67649d286284791898",
       "link": true
     }
   }
