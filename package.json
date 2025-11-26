@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
+  "version": "1.0.10",
   "keywords": [
     "strapi",
     "plugin",
@@ -27,9 +27,7 @@
     "verify": "strapi-plugin verify",
     "test:ts:back": "run -T tsc -p server/tsconfig.json"
   },
-  "dependencies": {
-    "strapi-plugin-wechat-miniprogram": "link:.yalc/strapi-plugin-wechat-miniprogram"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@strapi/sdk-plugin": "^5.3.2",
     "@strapi/strapi": "^5.31.2",
